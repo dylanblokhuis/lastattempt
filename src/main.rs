@@ -1,15 +1,16 @@
-use std::time::Duration;
-
 use basic_camera::{CameraController, CameraControllerPlugin};
 use bevy::{
-    asset::ChangeWatcher,
+    core_pipeline::tonemapping::Tonemapping,
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
     render::{
         settings::{Backends, WgpuSettings},
         RenderPlugin,
     },
 };
+use bevy_editor_pls::prelude::*;
 use plugin::{VoxelMaterial, VoxelPlugin};
+use vox::Vox;
 
 mod basic_camera;
 mod plugin;
@@ -20,7 +21,14 @@ fn main() {
         .add_plugins(
             DefaultPlugins
                 .set(AssetPlugin {
-                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(300)),
+                    watch_for_changes: true,
+                    ..Default::default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        present_mode: bevy::window::PresentMode::Mailbox,
+                        ..default()
+                    }),
                     ..Default::default()
                 })
                 .set(RenderPlugin {
@@ -30,9 +38,12 @@ fn main() {
                     },
                 }),
         )
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin)
+        .add_plugin(EditorPlugin::default())
         .add_plugin(CameraControllerPlugin)
         .add_plugin(VoxelPlugin)
-        .add_systems(Startup, setup)
+        .add_startup_system(setup)
         .run();
 }
 
@@ -43,12 +54,29 @@ fn setup(
     mut vox_materials: ResMut<Assets<VoxelMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let vox: Handle<Image> =
-        asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\3x3x3.vox"#);
     commands.spawn(MaterialMeshBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: vox_materials.add(VoxelMaterial { vox_texture: vox }),
+        material: vox_materials.add(
+            VoxelMaterial {
+                vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\castle.vox"#),
+                ..Default::default()
+            }
+            .into(),
+        ),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        ..Default::default()
+    });
+
+    commands.spawn(MaterialMeshBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: vox_materials.add(
+            VoxelMaterial {
+                vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\3x3x3.vox"#),
+                ..Default::default()
+            }
+            .into(),
+        ),
+        transform: Transform::from_xyz(2.0, 0.5, 0.0),
         ..Default::default()
     });
 
@@ -59,12 +87,13 @@ fn setup(
         ..default()
     });
     // cube
-    // commands.spawn(PbrBundle {
-    //     mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-    //     material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-    //     transform: Transform::from_xyz(0.0, 0.5, 0.0),
-    //     ..default()
-    // });
+    commands.spawn(MaterialMeshBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(1.0, 0.4, 0.4).into()),
+        transform: Transform::from_xyz(-2.0, 0.5, 0.0),
+        ..Default::default()
+    });
+
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -79,6 +108,7 @@ fn setup(
     commands
         .spawn(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+            tonemapping: Tonemapping::TonyMcMapface,
             ..default()
         })
         .insert(CameraController {

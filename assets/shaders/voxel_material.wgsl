@@ -3,7 +3,10 @@
 #import bevy_pbr::mesh_functions
 
 @group(1) @binding(0)
-var texture: texture_3d<u32>;
+var model_texture: texture_3d<u32>;
+
+@group(1) @binding(1)
+var palette_texture: texture_1d<f32>;
 
 struct FragmentInput {
     @builtin(front_facing) is_front: bool,
@@ -32,7 +35,7 @@ fn intersect_aabb(
 
 @fragment
 fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
-    var count_voxels = vec3<i32>(textureDimensions(texture, 0).xyz);
+    var count_voxels = vec3<i32>(textureDimensions(model_texture, 0).xyz);
 
     var inverse_model = transpose(mesh.inverse_transpose_model);
     var V: vec3<f32> = normalize(in.world_position.xyz - view.world_position.xyz);
@@ -46,8 +49,7 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
     let bounding_box_max = vec3<f32>(0.5);
 
     pnt = pnt + direction * max(0.0, intersect_aabb(pnt, direction, bounding_box_min, bounding_box_max).x);
-    pnt = (pnt + bounding_box_max) * vec3<f32>(count_voxels) * vec3<f32>(count_voxels);
-
+    pnt = (pnt - bounding_box_min) / (bounding_box_max - bounding_box_min) * vec3<f32>(count_voxels);
 
     var map_pos = vec3<i32>(pnt);
     let delta_dist = abs(vec3(length(direction)) / direction);
@@ -58,12 +60,15 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
 
     
     var final_color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
- 
-    for (var i: i32 = 0; i < 1000; i = i + 1) {
-        let voxel = textureLoad(texture, map_pos / vec3<i32>(count_voxels), 0).r;
+    let zero = vec3<i32>(0);
+    let max_voxels = vec3<i32>(count_voxels);
+    let max_either_axis = (max(max(max_voxels.x, max_voxels.y), max_voxels.z) * 2);
+
+    for (var i: i32 = 0; i < max_either_axis; i = i + 1) {
+        let voxel = textureLoad(model_texture, map_pos, 0).r;
 
         if voxel != u32(0) {
-            let color = vec3<f32>(1.0, 0.0, 0.0);
+            let color = textureLoad(palette_texture, i32(voxel), 0).rgb;
             var hit_color = color;
             if mask.x {
                 hit_color = color * 0.5;
@@ -82,12 +87,17 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
         side_dist += vec3<f32>(mask) * delta_dist;
         map_pos += vec3<i32>(mask) * ray_step;
 
-        
+        if (map_pos.x < zero.x || map_pos.y < zero.y || map_pos.z < zero.z) {
+            break;
+        }
+        if (map_pos.x > max_voxels.x || map_pos.y > max_voxels.y || map_pos.z > max_voxels.z) {
+            break;
+        }
     }
 
-    // if all(final_color == vec4<f32>(0.0, 0.0, 0.0, 0.0)) {
-    //     discard;
-    // }
+    if all(final_color == vec4<f32>(0.0, 0.0, 0.0, 0.0)) {
+        discard;
+    }
 
     return final_color;
 }

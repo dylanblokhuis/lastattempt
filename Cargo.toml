@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
-bevy = { git = "https://github.com/bevyengine/bevy.git" }
+bevy = { version = "0.10" }
+bevy_editor_pls = "0.4.0"
 dot_vox = "5.1.1"
