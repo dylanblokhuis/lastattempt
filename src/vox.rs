@@ -1,6 +1,6 @@
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
-    prelude::{Handle, Image},
+    prelude::{shape, Handle, Image, Mesh},
     reflect::TypeUuid,
     render::render_resource::Extent3d,
     utils::BoxedFuture,
@@ -29,6 +29,7 @@ impl AssetLoader for VoxLoader {
 pub struct Vox {
     pub model_texture: Handle<Image>,
     pub palette_texture: Handle<Image>,
+    pub mesh: Handle<Mesh>,
 }
 
 async fn load_vox<'a, 'b>(
@@ -98,9 +99,19 @@ async fn load_vox<'a, 'b>(
         )),
     );
 
+    let mesh = load_context.set_labeled_asset(
+        "mesh",
+        LoadedAsset::new(Mesh::from(shape::Box::new(
+            extent.width as f32 / 4.0,
+            extent.height as f32 / 4.0,
+            extent.depth_or_array_layers as f32 / 4.0,
+        ))),
+    );
+
     load_context.set_default_asset(LoadedAsset::new(Vox {
         model_texture: model,
         palette_texture: palette,
+        mesh,
     }));
     Ok(())
 }

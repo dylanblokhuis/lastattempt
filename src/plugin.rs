@@ -1,4 +1,5 @@
 use bevy::{
+    core::{Pod, Zeroable},
     prelude::*,
     reflect::TypeUuid,
     render::{
@@ -27,18 +28,37 @@ impl Plugin for VoxelPlugin {
 }
 
 fn load_material_textures(
+    mut commands: Commands,
     mut vox_materials: ResMut<Assets<VoxelMaterial>>,
     vox_assets: ResMut<Assets<Vox>>,
+    mesh_assets: ResMut<Assets<Mesh>>,
+    entities: Query<(Entity, &Handle<VoxelMaterial>), With<Handle<VoxelMaterial>>>,
 ) {
-    for (_, material) in vox_materials
+    for (mat_id, material) in vox_materials
         .iter_mut()
         .filter(|(_, material)| material.model_texture.is_none())
     {
         let Some(vox) = vox_assets.get(&material.vox) else {
             continue;
         };
+        let Some(mesh) = mesh_assets.get(&vox.mesh) else {
+            continue;
+        };
+
         material.model_texture = Some(vox.model_texture.clone());
         material.palette_texture = Some(vox.palette_texture.clone());
+        println!("{:?}", mesh.compute_aabb());
+        material.voxel_extra_data = VoxelExtraData {
+            half_extents: mesh.compute_aabb().unwrap().half_extents.to_array(),
+            _padding: 0,
+        };
+
+        for (entity, entity_mat_id) in entities.iter() {
+            if entity_mat_id.id() != mat_id {
+                continue;
+            }
+            commands.entity(entity).insert(vox.mesh.clone());
+        }
     }
 }
 
@@ -50,6 +70,25 @@ pub struct VoxelMaterial {
     pub model_texture: Option<Handle<Image>>,
     /// Srgb texture containing the palette data
     pub palette_texture: Option<Handle<Image>>,
+    pub voxel_extra_data: VoxelExtraData,
+}
+
+#[derive(Debug, Clone, Default, Copy, Pod, Zeroable)]
+#[repr(C, align(16))]
+pub struct VoxelExtraData {
+    pub half_extents: [f32; 3],
+    pub _padding: u32,
+}
+
+#[derive(Bundle, Clone, Default)]
+pub struct VoxelBundle {
+    pub material: Handle<VoxelMaterial>,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    /// User indication of whether an entity is visible
+    pub visibility: Visibility,
+    /// Algorithmically-computed indication of whether an entity is visible and should be extracted for rendering
+    pub computed_visibility: ComputedVisibility,
 }
 
 impl AsBindGroup for VoxelMaterial {
@@ -76,6 +115,14 @@ impl AsBindGroup for VoxelMaterial {
             return Err(AsBindGroupError::RetryNextUpdate);
         };
 
+        // model.texture.size().
+
+        let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+            contents: bytemuck::cast_slice(&[self.voxel_extra_data]),
+            label: Some("voxel_extra_data_buffer"),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
         let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
             label: "voxel_material_bind_group".into(),
             layout,
@@ -87,6 +134,10 @@ impl AsBindGroup for VoxelMaterial {
                 BindGroupEntry {
                     binding: 1,
                     resource: BindingResource::TextureView(&palette.texture_view),
+                },
+                BindGroupEntry {
+                    binding: 2,
+                    resource: BindingResource::Buffer(buffer.as_entire_buffer_binding()),
                 },
             ],
         });
@@ -127,6 +178,16 @@ impl AsBindGroup for VoxelMaterial {
                     },
                     count: None,
                 },
+                BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
         })
     }
@@ -135,5 +196,16 @@ impl AsBindGroup for VoxelMaterial {
 impl Material for VoxelMaterial {
     fn fragment_shader() -> ShaderRef {
         r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material.wgsl"#.into()
+    }
+
+    fn specialize(
+        pipeline: &bevy::pbr::MaterialPipeline<Self>,
+        descriptor: &mut RenderPipelineDescriptor,
+        layout: &bevy::render::mesh::MeshVertexBufferLayout,
+        key: bevy::pbr::MaterialPipelineKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive.cull_mode = None;
+
+        Ok(())
     }
 }

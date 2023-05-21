@@ -9,7 +9,7 @@ use bevy::{
     },
 };
 use bevy_editor_pls::prelude::*;
-use plugin::{VoxelMaterial, VoxelPlugin};
+use plugin::{VoxelBundle, VoxelMaterial, VoxelPlugin};
 use vox::Vox;
 
 mod basic_camera;
@@ -54,11 +54,10 @@ fn setup(
     mut vox_materials: ResMut<Assets<VoxelMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn(MaterialMeshBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+    commands.spawn(VoxelBundle {
         material: vox_materials.add(
             VoxelMaterial {
-                vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\castle.vox"#),
+                vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\3x3x3.vox"#),
                 ..Default::default()
             }
             .into(),
@@ -67,16 +66,27 @@ fn setup(
         ..Default::default()
     });
 
-    commands.spawn(MaterialMeshBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+    commands.spawn(VoxelBundle {
         material: vox_materials.add(
             VoxelMaterial {
-                vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\3x3x3.vox"#),
+                vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\castle.vox"#),
                 ..Default::default()
             }
             .into(),
         ),
-        transform: Transform::from_xyz(2.0, 0.5, 0.0),
+        transform: Transform::from_xyz(0.0, 0.5, -10.0),
+        ..Default::default()
+    });
+
+    commands.spawn(VoxelBundle {
+        material: vox_materials.add(
+            VoxelMaterial {
+                vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\monu3.vox"#),
+                ..Default::default()
+            }
+            .into(),
+        ),
+        transform: Transform::from_xyz(-50.0, 0.5, -10.0),
         ..Default::default()
     });
 

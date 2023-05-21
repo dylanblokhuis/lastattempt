@@ -2218,6 +2218,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_editor_pls",
+ "bytemuck",
  "dot_vox",
 ]
 
