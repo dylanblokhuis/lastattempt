@@ -4,6 +4,8 @@
         "bevy_render::globals": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_render/src/globals.wgsl",
         "bevy_pbr::clustered_forward": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_pbr/src/render/clustered_forward.wgsl",
         "bevy_pbr::mesh_bindings": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_pbr/src/render/mesh_bindings.wgsl",
+        "bevy_pbr::prepass_bindings": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_pbr/src/prepass/prepass_bindings.wgsl",
+        "bevy_pbr::prepass_utils": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_pbr/src/prepass/prepass_utils.wgsl",
         "bevy_pbr::mesh_functions": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_pbr/src/render/mesh_functions.wgsl",
         "bevy_pbr::mesh_types": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_pbr/src/render/mesh_types.wgsl",
         "bevy_pbr::mesh_vertex_output": "https://raw.githubusercontent.com/bevyengine/bevy/main/crates/bevy_pbr/src/render/mesh_vertex_output.wgsl",

@@ -1,16 +1,4 @@
-#import bevy_pbr::mesh_view_bindings
-#import bevy_pbr::pbr_bindings
-#import bevy_pbr::mesh_bindings
-
-#import bevy_pbr::utils
-#import bevy_pbr::clustered_forward
-#import bevy_pbr::lighting
-#import bevy_pbr::pbr_ambient
-#import bevy_pbr::shadows
-#import bevy_pbr::fog
-#import bevy_pbr::pbr_functions
-
-#import bevy_pbr::prepass_utils
+#import bevy_pbr::prepass_bindings
 
 struct VoxelExtraData {
     half_extents: vec3<f32>
@@ -28,7 +16,7 @@ var<uniform> voxel_extra_data: VoxelExtraData;
 struct FragmentInput {
     @builtin(front_facing) is_front: bool,
     @builtin(position) frag_coord: vec4<f32>,
-    #import bevy_pbr::mesh_vertex_output
+    @location(0) world_position: vec4<f32>,
 };
 
 fn intersect_aabb(
@@ -52,7 +40,14 @@ fn intersect_aabb(
 const VOXEL_SCALE = 1.0;
 
 struct FragmentOutput {
-    @location(0) color: vec4<f32>,
+    @location(0) normal: vec4<f32>,
+    @location(1) motion_vector: vec2<f32>,
+}
+
+fn point_to_depth(position: vec3<f32>) -> f32 {
+    let pos_in_clip_space = view.view_proj * vec4(position, 1.0);
+    let depth_in_fb = (pos_in_clip_space.z / pos_in_clip_space.w);
+    return depth_in_fb;
 }
 
 @fragment
@@ -71,7 +66,6 @@ fn fragment(in: FragmentInput) -> FragmentOutput {
     let bounding_box_max = vec3<f32>(voxel_extra_data.half_extents / VOXEL_SCALE);
 
     pnt = pnt + direction * max(0.0, intersect_aabb(pnt, direction, bounding_box_min, bounding_box_max).x);
-    var hit_point = pnt;
     pnt = (pnt - bounding_box_min) / (bounding_box_max - bounding_box_min) * vec3<f32>(count_voxels);
 
     var map_pos = vec3<i32>(pnt);
@@ -80,60 +74,61 @@ fn fragment(in: FragmentInput) -> FragmentOutput {
     let ray_step = vec3<i32>(ray_dir_sign);
     var side_dist = (ray_dir_sign * (vec3<f32>(map_pos) - pnt) + (ray_dir_sign * 0.5) + 0.5) * delta_dist;
     var mask = vec3(false, false, false);
-
+    
     var final_color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
     let zero = vec3<i32>(0);
     let max_voxels = vec3<i32>(count_voxels);
     let max_either_axis = (max(max(max_voxels.x, max_voxels.y), max_voxels.z) * 2);
 
-    var hit = false;
-
     for (var i: i32 = 0; i < max_either_axis; i = i + 1) {
         let voxel = textureLoad(model_texture, map_pos, 0).r;
 
         if voxel != u32(0) {
-            hit = true;
             let color = textureLoad(palette_texture, i32(voxel), 0).rgb;
             var hit_color = color;
-            var normal = vec4<f32>(0.0, 0.0, 0.0, 0.0);
             if mask.x {
-                normal = -ray_dir_sign.x * vec4<f32>(1.0, 0.0, 0.0, 1.0);
+                hit_color = color * 0.5;
+                out.normal = -ray_dir_sign.x * vec4<f32>(1.0, 0.0, 0.0, 1.0);
             }
             if mask.y {
-                normal = -ray_dir_sign.y * vec4<f32>(0.0, 1.0, 0.0, 1.0);
+                hit_color = color * 0.75;
+                out.normal = -ray_dir_sign.y * vec4<f32>(0.0, 1.0, 0.0, 1.0);
             }
             if mask.z {
-                normal = -ray_dir_sign.z * vec4<f32>(0.0, 0.0, 1.0, 1.0);
+                hit_color = color;
+                out.normal = -ray_dir_sign.z * vec4<f32>(0.0, 0.0, 1.0, 1.0);
             }
 
             final_color = vec4<f32>(hit_color, 1.0);
-
-            var pbr_input: PbrInput = pbr_input_new();
-            pbr_input.material.base_color = vec4<f32>(final_color.rgb, 1.0);
-            pbr_input.frag_coord = in.frag_coord;
-            pbr_input.world_position = vec4<f32>(pnt, 1.0);
-            pbr_input.world_normal = normal.rgb;
-            pbr_input.N = (mesh.model * vec4<f32>(normal.xyz, 0.0)).xyz;
-            pbr_input.V = -direction;
-
-            out.color = pbr(pbr_input);
+            let clip_position_t = view.unjittered_view_proj * in.world_position;
+            let clip_position = clip_position_t.xy / clip_position_t.w;
+            let previous_clip_position_t = previous_view_proj * in.previous_world_position;
+            let previous_clip_position = previous_clip_position_t.xy / previous_clip_position_t.w;
+            // These motion vectors are used as offsets to UV positions and are stored
+            // in the range -1,1 to allow offsetting from the one corner to the
+            // diagonally-opposite corner in UV coordinates, in either direction.
+            // A difference between diagonally-opposite corners of clip space is in the
+            // range -2,2, so this needs to be scaled by 0.5. And the V direction goes
+            // down where clip space y goes up, so y needs to be flipped.
+            out.motion_vector = (clip_position - previous_clip_position) * vec2(0.5, -0.5);
             break;
         }
         mask = side_dist.xyz <= min(side_dist.yzx, side_dist.zxy);
         side_dist += vec3<f32>(mask) * delta_dist;
         map_pos += vec3<i32>(mask) * ray_step;
 
-        if map_pos.x < zero.x || map_pos.y < zero.y || map_pos.z < zero.z {
+        if (map_pos.x < zero.x || map_pos.y < zero.y || map_pos.z < zero.z) {
             break;
         }
-        if map_pos.x > max_voxels.x || map_pos.y > max_voxels.y || map_pos.z > max_voxels.z {
+        if (map_pos.x > max_voxels.x || map_pos.y > max_voxels.y || map_pos.z > max_voxels.z) {
             break;
         }
     }
 
-    if !hit {
-        discard;
-    }
+    // if final_color.a == 0.0 {
+    //     return ;
+    // }
+
 
     return out;
 }

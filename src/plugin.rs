@@ -47,12 +47,10 @@ fn load_material_textures(
 
         material.model_texture = Some(vox.model_texture.clone());
         material.palette_texture = Some(vox.palette_texture.clone());
-        println!("{:?}", mesh.compute_aabb());
         material.voxel_extra_data = VoxelExtraData {
             half_extents: mesh.compute_aabb().unwrap().half_extents.to_array(),
             _padding: 0,
         };
-
         for (entity, entity_mat_id) in entities.iter() {
             if entity_mat_id.id() != mat_id {
                 continue;
@@ -114,8 +112,6 @@ impl AsBindGroup for VoxelMaterial {
         } else {
             return Err(AsBindGroupError::RetryNextUpdate);
         };
-
-        // model.texture.size().
 
         let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
             contents: bytemuck::cast_slice(&[self.voxel_extra_data]),
@@ -194,18 +190,21 @@ impl AsBindGroup for VoxelMaterial {
 }
 
 impl Material for VoxelMaterial {
+    // fn prepass_fragment_shader() -> ShaderRef {
+    //     r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material_prepass.wgsl"#.into()
+    // }
     fn fragment_shader() -> ShaderRef {
         r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material.wgsl"#.into()
     }
 
-    fn specialize(
-        pipeline: &bevy::pbr::MaterialPipeline<Self>,
-        descriptor: &mut RenderPipelineDescriptor,
-        layout: &bevy::render::mesh::MeshVertexBufferLayout,
-        key: bevy::pbr::MaterialPipelineKey<Self>,
-    ) -> Result<(), SpecializedMeshPipelineError> {
-        descriptor.primitive.cull_mode = None;
+    // fn specialize(
+    //     pipeline: &bevy::pbr::MaterialPipeline<Self>,
+    //     descriptor: &mut RenderPipelineDescriptor,
+    //     layout: &bevy::render::mesh::MeshVertexBufferLayout,
+    //     key: bevy::pbr::MaterialPipelineKey<Self>,
+    // ) -> Result<(), SpecializedMeshPipelineError> {
+    //     descriptor.primitive.cull_mode = None;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }
