@@ -45,6 +45,10 @@ fn main() {
                     },
                 }),
         )
+        .insert_resource(AmbientLight {
+            brightness: 1.0,
+            ..Default::default()
+        })
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin)
         .add_plugin(CameraControllerPlugin)
@@ -66,7 +70,8 @@ fn setup(
             vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\3x3x3.vox"#),
             ..Default::default()
         }),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        transform: Transform::from_xyz(0.0, 0.5, 0.0)
+            .with_rotation(Quat::from_rotation_y(PI / 4.0)),
         ..Default::default()
     });
 
@@ -87,18 +92,21 @@ fn setup(
         transform: Transform::from_xyz(-20.0, 0.5, -10.0),
         ..Default::default()
     });
-
-    // plane
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-        ..default()
+    commands.spawn(VoxelBundle {
+        material: vox_materials.add(VoxelMaterial {
+            vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\basic-tile.vox"#),
+            ..Default::default()
+        }),
+        transform: Transform::from_xyz(-20.0, -5.0, -10.0),
+        ..Default::default()
     });
+
     // cube
     commands.spawn(MaterialMeshBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(Color::rgb(1.0, 0.4, 0.4).into()),
-        transform: Transform::from_xyz(-1.5, 0.5, 0.0),
+        transform: Transform::from_xyz(-1.5, 0.5, 0.0)
+            .with_rotation(Quat::from_rotation_y(PI / 4.0)),
         ..Default::default()
     });
 
@@ -113,21 +121,21 @@ fn setup(
     //     ..default()
     // });
 
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        transform: Transform {
-            translation: Vec3::new(0.0, 2.0, 0.0),
-            rotation: Quat::from_rotation_x(-PI / 4.),
-            ..default()
-        },
-        // The default cascade config is designed to handle large scenes.
-        // As this example has a much smaller world, we can tighten the shadow
-        // bounds for better visual quality.
-        ..default()
-    });
+    // commands.spawn(DirectionalLightBundle {
+    //     directional_light: DirectionalLight {
+    //         shadows_enabled: false,
+    //         ..default()
+    //     },
+    //     transform: Transform {
+    //         translation: Vec3::new(0.0, 2.0, 0.0),
+    //         rotation: Quat::from_rotation_x(-PI / 4.),
+    //         ..default()
+    //     },
+    //     // The default cascade config is designed to handle large scenes.
+    //     // As this example has a much smaller world, we can tighten the shadow
+    //     // bounds for better visual quality.
+    //     ..default()
+    // });
 
     // camera
     commands

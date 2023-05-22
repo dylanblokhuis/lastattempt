@@ -190,21 +190,21 @@ impl AsBindGroup for VoxelMaterial {
 }
 
 impl Material for VoxelMaterial {
-    // fn prepass_fragment_shader() -> ShaderRef {
-    //     r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material_prepass.wgsl"#.into()
-    // }
+    fn prepass_fragment_shader() -> ShaderRef {
+        r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material_prepass.wgsl"#.into()
+    }
     fn fragment_shader() -> ShaderRef {
         r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material.wgsl"#.into()
     }
 
-    // fn specialize(
-    //     pipeline: &bevy::pbr::MaterialPipeline<Self>,
-    //     descriptor: &mut RenderPipelineDescriptor,
-    //     layout: &bevy::render::mesh::MeshVertexBufferLayout,
-    //     key: bevy::pbr::MaterialPipelineKey<Self>,
-    // ) -> Result<(), SpecializedMeshPipelineError> {
-    //     descriptor.primitive.cull_mode = None;
+    fn specialize(
+        pipeline: &bevy::pbr::MaterialPipeline<Self>,
+        descriptor: &mut RenderPipelineDescriptor,
+        layout: &bevy::render::mesh::MeshVertexBufferLayout,
+        key: bevy::pbr::MaterialPipelineKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive.cull_mode = None;
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 }

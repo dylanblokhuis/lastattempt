@@ -1,6 +1,7 @@
 #import bevy_pbr::mesh_view_bindings
 #import bevy_pbr::pbr_bindings
 #import bevy_pbr::mesh_bindings
+#import bevy_pbr::mesh_functions
 
 #import bevy_pbr::utils
 #import bevy_pbr::clustered_forward
@@ -112,8 +113,8 @@ fn fragment(in: FragmentInput) -> FragmentOutput {
             pbr_input.material.base_color = vec4<f32>(final_color.rgb, 1.0);
             pbr_input.frag_coord = in.frag_coord;
             pbr_input.world_position = vec4<f32>(pnt, 1.0);
-            pbr_input.world_normal = normal.rgb;
-            pbr_input.N = (mesh.model * vec4<f32>(normal.xyz, 0.0)).xyz;
+            pbr_input.world_normal =  mesh_normal_local_to_world(normal.rgb);
+            pbr_input.N = mesh_normal_local_to_world(normal.rgb);
             pbr_input.V = -direction;
 
             out.color = pbr(pbr_input);
