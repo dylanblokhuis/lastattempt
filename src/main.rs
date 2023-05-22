@@ -92,14 +92,21 @@ fn setup(
         transform: Transform::from_xyz(-20.0, 0.5, -10.0),
         ..Default::default()
     });
-    commands.spawn(VoxelBundle {
-        material: vox_materials.add(VoxelMaterial {
-            vox: asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\basic-tile.vox"#),
-            ..Default::default()
-        }),
-        transform: Transform::from_xyz(-20.0, -5.0, -10.0),
-        ..Default::default()
-    });
+
+    let plane = asset_server.load(r#"C:\Users\dylan\dev\lastattempt\assets\vox\basic-tile.vox"#);
+
+    for x in 0..10 {
+        for z in 0..10 {
+            commands.spawn(VoxelBundle {
+                material: vox_materials.add(VoxelMaterial {
+                    vox: plane.clone(),
+                    ..Default::default()
+                }),
+                transform: Transform::from_xyz(-x as f32 * 50.0, -5.0, -z as f32 * 50.0),
+                ..Default::default()
+            });
+        }
+    }
 
     // cube
     commands.spawn(MaterialMeshBundle {
@@ -110,42 +117,11 @@ fn setup(
         ..Default::default()
     });
 
-    // light
-    // commands.spawn(PointLightBundle {
-    //     point_light: PointLight {
-    //         intensity: 1500.0,
-    //         shadows_enabled: true,
-    //         ..default()
-    //     },
-    //     transform: Transform::from_xyz(4.0, 8.0, 4.0),
-    //     ..default()
-    // });
-
-    // commands.spawn(DirectionalLightBundle {
-    //     directional_light: DirectionalLight {
-    //         shadows_enabled: false,
-    //         ..default()
-    //     },
-    //     transform: Transform {
-    //         translation: Vec3::new(0.0, 2.0, 0.0),
-    //         rotation: Quat::from_rotation_x(-PI / 4.),
-    //         ..default()
-    //     },
-    //     // The default cascade config is designed to handle large scenes.
-    //     // As this example has a much smaller world, we can tighten the shadow
-    //     // bounds for better visual quality.
-    //     ..default()
-    // });
-
     // camera
     commands
         .spawn((
             Camera3dBundle {
                 transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-                camera: Camera {
-                    hdr: true,
-                    ..default()
-                },
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..default()
             },
