@@ -2,13 +2,10 @@ use bevy::{
     core::{Pod, Zeroable},
     prelude::*,
     reflect::TypeUuid,
-    render::{
-        render_asset::RenderAssets, render_resource::*, renderer::RenderDevice,
-        texture::TextureCache, Extract, RenderApp, RenderSet,
-    },
+    render::render_resource::*,
 };
 
-use crate::vox::{self, Vox, VoxLoader};
+use crate::vox::{Vox, VoxLoader};
 
 #[derive(Default)]
 pub struct VoxelPlugin;
@@ -18,12 +15,7 @@ impl Plugin for VoxelPlugin {
         app.init_asset_loader::<VoxLoader>()
             .add_asset::<Vox>()
             .add_plugin(MaterialPlugin::<VoxelMaterial>::default())
-            .add_system(load_material_textures);
-
-        let render_app = match app.get_sub_app_mut(RenderApp) {
-            Ok(render_app) => render_app,
-            Err(_) => return,
-        };
+            .add_systems(Update, load_material_textures);
     }
 }
 
@@ -198,10 +190,10 @@ impl Material for VoxelMaterial {
     }
 
     fn specialize(
-        pipeline: &bevy::pbr::MaterialPipeline<Self>,
+        _pipeline: &bevy::pbr::MaterialPipeline<Self>,
         descriptor: &mut RenderPipelineDescriptor,
-        layout: &bevy::render::mesh::MeshVertexBufferLayout,
-        key: bevy::pbr::MaterialPipelineKey<Self>,
+        _layout: &bevy::render::mesh::MeshVertexBufferLayout,
+        _key: bevy::pbr::MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         descriptor.primitive.cull_mode = None;
 

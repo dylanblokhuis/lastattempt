@@ -4,21 +4,14 @@ use basic_camera::{CameraController, CameraControllerPlugin};
 use bevy::{
     asset::ChangeWatcher,
     core_pipeline::{
-        bloom::BloomSettings,
         experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin},
-        prepass::{DepthPrepass, MotionVectorPrepass, NormalPrepass},
         tonemapping::Tonemapping,
     },
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    pbr::CascadeShadowConfigBuilder,
     prelude::*,
-    render::{
-        settings::{Backends, WgpuSettings},
-        RenderPlugin,
-    },
+    render::{settings::WgpuSettings, RenderPlugin},
 };
 use plugin::{VoxelBundle, VoxelMaterial, VoxelPlugin};
-use vox::Vox;
 
 mod basic_camera;
 mod plugin;
@@ -54,7 +47,7 @@ fn main() {
         .add_plugin(CameraControllerPlugin)
         .add_plugin(VoxelPlugin)
         .add_plugin(TemporalAntiAliasPlugin)
-        .add_startup_system(setup)
+        .add_systems(Startup, setup)
         .run();
 }
 
