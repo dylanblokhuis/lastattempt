@@ -7,10 +7,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.71"
-bevy = { git = "https://github.com/dylanblokhuis/bevy" }
+bevy = "0.10"
 bvh = "0.7.2"
 bytemuck = { version = "1.13.1", features = ["derive"] }
 dot_vox = "5.1.1"
+bevy-inspector-egui =  "0.18.3"
+bevy_flycam = "0.10.1"
+noise = "0.8.2"
 
 [profile.dev.package."*"]
 opt-level = 3

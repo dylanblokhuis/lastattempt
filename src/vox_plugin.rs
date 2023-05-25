@@ -15,16 +15,22 @@ impl Plugin for VoxelPlugin {
         app.init_asset_loader::<VoxLoader>()
             .add_asset::<Vox>()
             .add_plugin(MaterialPlugin::<VoxelMaterial>::default())
-            .add_systems(Update, load_material_textures);
+            .add_system(load_material_textures);
     }
 }
+
+#[derive(Component)]
+struct VoxelTexturesLoaded;
 
 fn load_material_textures(
     mut commands: Commands,
     mut vox_materials: ResMut<Assets<VoxelMaterial>>,
     vox_assets: ResMut<Assets<Vox>>,
     mesh_assets: ResMut<Assets<Mesh>>,
-    entities: Query<(Entity, &Handle<VoxelMaterial>), With<Handle<VoxelMaterial>>>,
+    entities: Query<
+        (Entity, &Handle<VoxelMaterial>),
+        (With<Handle<VoxelMaterial>>, Without<VoxelTexturesLoaded>),
+    >,
 ) {
     for (mat_id, material) in vox_materials
         .iter_mut()
@@ -47,7 +53,10 @@ fn load_material_textures(
             if entity_mat_id.id() != mat_id {
                 continue;
             }
-            commands.entity(entity).insert(vox.mesh.clone());
+            commands
+                .entity(entity)
+                .insert(vox.mesh.clone())
+                .insert(VoxelTexturesLoaded);
         }
     }
 }
@@ -182,9 +191,9 @@ impl AsBindGroup for VoxelMaterial {
 }
 
 impl Material for VoxelMaterial {
-    fn prepass_fragment_shader() -> ShaderRef {
-        r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material_prepass.wgsl"#.into()
-    }
+    // fn prepass_fragment_shader() -> ShaderRef {
+    //     r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material_prepass.wgsl"#.into()
+    // }
     fn fragment_shader() -> ShaderRef {
         r#"C:\Users\dylan\dev\lastattempt\assets\shaders\voxel_material.wgsl"#.into()
     }

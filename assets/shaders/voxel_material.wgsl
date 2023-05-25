@@ -75,7 +75,8 @@ fn fragment(in: FragmentInput) -> FragmentOutput {
     var hit_point = pnt;
     pnt = (pnt - bounding_box_min) / (bounding_box_max - bounding_box_min) * vec3<f32>(count_voxels);
 
-    var map_pos = vec3<i32>(pnt);
+    // epsilon
+    var map_pos = vec3<i32>(pnt + 0.0001);
     let delta_dist = abs(vec3(length(direction)) / direction);
     let ray_dir_sign = sign(direction);
     let ray_step = vec3<i32>(ray_dir_sign);
@@ -98,26 +99,31 @@ fn fragment(in: FragmentInput) -> FragmentOutput {
             var hit_color = color;
             var normal = vec4<f32>(0.0, 0.0, 0.0, 0.0);
             if mask.x {
+                hit_color = hit_color * vec3<f32>(0.5, 0.5, 0.5);
                 normal = -ray_dir_sign.x * vec4<f32>(1.0, 0.0, 0.0, 1.0);
             }
             if mask.y {
+                hit_color = hit_color * vec3<f32>(1.0, 1.0, 1.0);
                 normal = -ray_dir_sign.y * vec4<f32>(0.0, 1.0, 0.0, 1.0);
             }
             if mask.z {
+                hit_color = hit_color * vec3<f32>(0.75, 0.75, 0.75);
                 normal = -ray_dir_sign.z * vec4<f32>(0.0, 0.0, 1.0, 1.0);
             }
+            
+            
 
             final_color = vec4<f32>(hit_color, 1.0);
 
-            var pbr_input: PbrInput = pbr_input_new();
-            pbr_input.material.base_color = vec4<f32>(final_color.rgb, 1.0);
-            pbr_input.frag_coord = in.frag_coord;
-            pbr_input.world_position = vec4<f32>(pnt, 1.0);
-            pbr_input.world_normal =  mesh_normal_local_to_world(normal.rgb);
-            pbr_input.N = mesh_normal_local_to_world(normal.rgb);
-            pbr_input.V = -direction;
+            // var pbr_input: PbrInput = pbr_input_new();
+            // pbr_input.material.base_color = vec4<f32>(final_color.rgb, 1.0);
+            // pbr_input.frag_coord = in.frag_coord;
+            // pbr_input.world_position = vec4<f32>(pnt, 1.0);
+            // pbr_input.world_normal =  mesh_normal_local_to_world(normal.rgb);
+            // pbr_input.N = mesh_normal_local_to_world(normal.rgb);
+            // pbr_input.V = -direction;
 
-            out.color = pbr(pbr_input);
+            out.color = final_color;
             break;
         }
         mask = side_dist.xyz <= min(side_dist.yzx, side_dist.zxy);
